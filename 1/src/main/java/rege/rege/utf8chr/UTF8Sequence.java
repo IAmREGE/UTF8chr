@@ -10,18 +10,45 @@ import java.util.Map.Entry;
 
 import static java.util.Collections.sort;
 
+/**
+ * @author REGE
+ * @since 0.0.1a1
+ */
 public class UTF8Sequence
 implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
+    /**
+     * Where to store the UTF8 characters.
+     */
     private final UTF8Char[] chars;
 
+    /**
+     * Line separators from Python, contains {@code \v}, {@code \n},
+     * {@code \r}, {@code \r\n}.
+     */
     private static final UTF8Sequence[] LINESEPS;
+    /**
+     * Whitespace characters from Python.
+     */
     public static final UTF8Sequence WHITESPACES;
+    /**
+     * Decimal characters from Python.
+     */
     public static final UTF8Sequence DECIMALS;
+    /**
+     * Digit characters from Python.
+     */
     public static final UTF8Sequence DIGITS;
+    /**
+     * Numeric characters from Python.
+     */
     public static final UTF8Sequence NUMERICS;
     private static final Map<UTF8Char, Iterable<UTF8Char>> TOLOWERS;
     private static final Map<UTF8Char, Iterable<UTF8Char>> TOUPPERS;
 
+    /**
+     * @param chars Create a new UTF8Sequence with the characters in the array.
+     * @throws NullPointerException If the array or one of its element is null.
+     */
     public UTF8Sequence(UTF8Char[] chars) {
         this.chars = new UTF8Char[chars.length];
         for (int i = 0; i < chars.length; i++) {
@@ -29,6 +56,11 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         }
     }
 
+    /**
+     * @param chars Create a new UTF8Sequence with the characters in the
+     * iterable.
+     * @throws NullPointerException If the iterable or one of its next is null.
+     */
     public UTF8Sequence(Iterable<UTF8Char> chars) {
         final List<UTF8Char> LIST = new ArrayList<UTF8Char>();
         for (UTF8Char i : chars) {
@@ -42,6 +74,11 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         }
     }
 
+    /**
+     * @param codepoints Create a new UTF8Sequence with the character
+     * codepoints in the array.
+     * @throws NullPointerException If the array is null.
+     */
     public UTF8Sequence(long[] codepoints) {
         this.chars = new UTF8Char[codepoints.length];
         for (int i = 0; i < codepoints.length; i++) {
@@ -49,6 +86,11 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         }
     }
 
+    /**
+     * @param codepoints Create a new UTF8Sequence with the character
+     * codepoints in the array.
+     * @throws NullPointerException If the array or one of its element is null.
+     */
     public UTF8Sequence(Long[] codepoints) {
         this.chars = new UTF8Char[codepoints.length];
         for (int i = 0; i < codepoints.length; i++) {
@@ -56,6 +98,11 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         }
     }
 
+    /**
+     * @param string Create a new UTF8Sequence converts from
+     * {@link java.lang.String}.
+     * @throws NullPointerException If the string is null.
+     */
     public UTF8Sequence(String string) {
         final List<UTF8Char> LIST = new ArrayList<UTF8Char>();
         for (int i = 0; true; i++) {
@@ -76,38 +123,77 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         }
     }
 
+    /**
+     * @param i Equivalent to {@code new UTF8Sequence(Long.toString(i))}. @see
+     * {@link java.lang.Long}, {@link UTF8Sequence#UTF8Sequence(String)}
+     */
     public UTF8Sequence(long i) {
         this(Long.toString(i));
     }
 
+    /**
+     * @param i Equivalent to {@code new UTF8Sequence(Integer.toString(i))}.
+     * @see {@link java.lang.Integer},{@link UTF8Sequence#UTF8Sequence(String)}
+     */
     public UTF8Sequence(int i) {
         this(Integer.toString(i));
     }
 
+    /**
+     * @param i Equivalent to {@code new UTF8Sequence(Short.toString(i))}. @see
+     * {@link java.lang.Short}, {@link UTF8Sequence#UTF8Sequence(String)}
+     */
     public UTF8Sequence(short i) {
         this(Short.toString(i));
     }
 
+    /**
+     * @param i Equivalent to {@code new UTF8Sequence(Byte.toString(i))}. @see
+     * {@link java.lang.Byte}, {@link UTF8Sequence#UTF8Sequence(String)}
+     */
     public UTF8Sequence(byte i) {
         this(Byte.toString(i));
     }
 
+    /**
+     * @param i Equivalent to {@code new UTF8Sequence(Float.toString(i))}. @see
+     * {@link java.lang.Float}, {@link UTF8Sequence#UTF8Sequence(String)}
+     */
     public UTF8Sequence(float i) {
         this(Float.toString(i));
     }
 
+    /**
+     * @param i Equivalent to {@code new UTF8Sequence(Double.toString(i))}.
+     * @see {@link java.lang.Double}, {@link UTF8Sequence#UTF8Sequence(String)}
+     */
     public UTF8Sequence(double i) {
         this(Double.toString(i));
     }
 
+    /**
+     * @param i Equivalent to
+     * {@code new UTF8Sequence(new UTF8Char[]&#123;i&#125;)}. @see
+     * {@link UTF8Sequence#UTF8Sequence(UTF8Char[])}
+     * @throws NullPointerException If the character is null.
+     * @see UTF8Char
+     */
     public UTF8Sequence(UTF8Char i) {
         this(new UTF8Char[]{i});
     }
 
+    /**
+     * @param i Equivalent to
+     * {@code new UTF8Sequence(new UTF8Char[]&#123;new UTF8Char(i)&#125;)}.
+     * @see {@link UTF8Sequence#UTF8Sequence(UTF8Char[])}
+     */
     public UTF8Sequence(char i) {
         this(new UTF8Char[]{new UTF8Char(i)});
     }
 
+    /**
+     * Create a new empty UTF8Sequence.
+     */
     public UTF8Sequence() {
         this(new long[0]);
     }
@@ -148,6 +234,24 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
             sl = i.toByteArray();
             for (byte j = 0; j < sl.length; j++) {
                 RES.add(Byte.valueOf(sl[j]));
+            }
+        }
+        return RES;
+    }
+
+    public byte[] getBytes() throws IndexOutOfBoundsException {
+        final long LENGTH = this.byteLength();
+        if (LENGTH > 0x7fffffffL) {
+            throw new IndexOutOfBoundsException();
+        }
+        final byte[] RES = new byte[(int)LENGTH];
+        byte[] sl;
+        int index = 0;
+        for (UTF8Char i : this) {
+            sl = i.toByteArray();
+            for (byte j = 0; j < sl.length; j++) {
+                RES[index] = sl[j];
+                index++;
             }
         }
         return RES;
@@ -241,21 +345,96 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return new UTF8Sequence(R);
     }
 
-    public UTF8Sequence repeat(int times) {
-        if (times <= 0) {
+    public UTF8Sequence times(int value) {
+        if (value <= 0) {
             return new UTF8Sequence();
         }
-        times--;
-        final UTF8Sequence[] R = new UTF8Sequence[times];
-        for (int i = 0; i < times; i++) {
+        value--;
+        final UTF8Sequence[] R = new UTF8Sequence[value];
+        for (int i = 0; i < value; i++) {
             R[i] = this;
         }
         return this.concat(R);
     }
 
-    public UTF8Sequence slice(Integer start, Integer stop, Integer step) {
-        // TODO
-        return new UTF8Sequence();
+    public UTF8Sequence repeat(int count) throws IllegalArgumentException {
+        if (count < 0) {
+            throw new IllegalArgumentException("count is negative: " +
+                                               Integer.toString(count));
+        }
+        return this.times(count);
+    }
+
+    public UTF8Sequence slice(Integer start, Integer stop, Integer step)
+    throws IllegalArgumentException {
+        final int STEP = (step != null) ? step.intValue() : 1;
+        if (STEP == 0) {
+            throw new IllegalArgumentException("slice step cannot be zero");
+        }
+        int ts;
+        final int NEWLEN;
+        final UTF8Char[] R;
+        if (STEP < 0) {
+            ts = (start == null) ? this.chars.length - 1 : start.intValue();
+            if (ts < 0) {
+                ts += this.chars.length;
+                if (ts < 0) {
+                    return new UTF8Sequence();
+                }
+            }
+            if (ts >= this.chars.length) {
+                ts = this.chars.length - 1;
+            }
+            if (stop == null) {
+                NEWLEN = (ts + 1) / -STEP + (((ts + 1) % STEP != 0) ? 1 : 0);
+            } else {
+                if (stop.intValue() < 0) {
+                    stop = Integer.valueOf(this.chars.length +stop.intValue());
+                    if (stop.intValue() < 0) {
+                        return this.slice(start, null, step);
+                    }
+                }
+                if (stop.intValue() >= ts) {
+                    return new UTF8Sequence();
+                }
+                NEWLEN = (ts - stop.intValue()) / -STEP +
+                         (((ts - stop.intValue()) % -STEP != 0) ? 1 : 0);
+            }
+        } else {
+            ts = (start == null) ? 0 : start.intValue();
+            if (ts < 0) {
+                ts += this.chars.length;
+                if (ts < 0) {
+                    ts = 0;
+                }
+            }
+            if (stop == null) {
+                NEWLEN = (this.chars.length - ts) / STEP +
+                         (((this.chars.length - ts) % STEP != 0) ? 1 : 0);
+            } else {
+                if (stop.intValue() < 0) {
+                    stop = Integer.valueOf(this.chars.length +stop.intValue());
+                    if (stop.intValue() <= ts) {
+                        return new UTF8Sequence();
+                    }
+                }
+                if (stop.intValue() >= this.chars.length) {
+                    return this.slice(start, null, step);
+                }
+                NEWLEN = (stop.intValue() - ts) / STEP +
+                         (((stop.intValue() - ts) % STEP != 0) ? 1 : 0);
+            }
+        }
+        if (NEWLEN <= 0) {
+            return new UTF8Sequence();
+        }
+        R = new UTF8Char[NEWLEN];
+        int p = ts;
+        for (int i = 0; i < NEWLEN; i++) {
+            R[i] = this.chars[p];
+            p += STEP;
+        }
+        return new UTF8Sequence(R);
     }
 
     public UTF8Sequence slice(Integer start, Integer stop) {
@@ -1131,6 +1310,14 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return this.indexOf(sub, 0);
     }
 
+    public boolean contains(UTF8Char sub) {
+        return this.indexOf(sub, 0) != -1;
+    }
+
+    public boolean contains(UTF8Sequence sub) {
+        return this.indexOf(sub, 0) != -1;
+    }
+
     public int lastIndexOf(UTF8Char sub, int fromIndex) {
         // TODO
         return -1;
@@ -1661,6 +1848,27 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
 
     public boolean startsWith(UTF8Sequence prefix) {
         return this.startsWith(prefix, 0);
+    }
+
+    public UTF8Sequence regularAll() {
+        final List<UTF8Char> R = new ArrayList<UTF8Char>();
+        for (UTF8Char i : this) {
+            R.add(new UTF8Char(i.ord()));
+        }
+        return new UTF8Sequence(R);
+    }
+
+    public boolean equalsWithRegular(UTF8Sequence o) {
+        if (this.chars.length != o.chars.length) {
+            return false;
+        }
+        for (int i = 0; i < this.chars.length; i++) {
+            if (this.chars[i].ord() != o.chars[i].ord() ||
+                this.chars[i].getByteLength() != o.chars[i].getByteLength()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void registerPairs(UTF8Char upper, UTF8Char lower) {
