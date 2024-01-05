@@ -3,6 +3,7 @@
  */
 package rege.rege.utf8chr.test;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import rege.rege.utf8chr.UTF8Char;
@@ -27,7 +28,7 @@ public class Test1 {
                                      .equals(new UTF8Sequence("world"))));
         LOGGER.info(Boolean.toString(HELLO.subSequence(6)
                                      .equals(new UTF8Sequence("World"))));
-        LOGGER.info(HELLO.toUpperCase().toString());
+        LOGGER.info(HELLO.upper().toString());
         LOGGER.info(UTF8Sequence.join(new UTF8Char('!'), HELLO.singles())
                     .toString());
         LOGGER.info(UTF8Sequence
@@ -39,5 +40,15 @@ public class Test1 {
         LOGGER.info(HELLO.repeat(5).toString());
         LOGGER.info(HELLO.repeat(1).toString());
         LOGGER.info(HELLO.repeat(-1).toString());
+        LOGGER.info(Integer.toString(HELLO.indexOf(new UTF8Char('l'))));
+        LOGGER.info(Integer.toString(HELLO.lastIndexOf(new UTF8Char('l'))));
+        LOGGER.info(Arrays.toString(HELLO.indicesOf(new UTF8Char('l'))));
+        LOGGER.info(Arrays.toString(HELLO.split(new UTF8Char('l'))));
+        LOGGER.info(HELLO.strip(new UTF8Sequence("Held")).toString());
+        LOGGER.info(HELLO.partition(new UTF8Char('l')).toString());
+        LOGGER.info(HELLO.replace(new UTF8Char('l'), new UTF8Char('1'))
+                    .toString());
+        LOGGER.info(new UTF8Sequence("\\x50\\x4a\\120\\575\\n\\u5001")
+                    .unescape().toString());
     }
 }

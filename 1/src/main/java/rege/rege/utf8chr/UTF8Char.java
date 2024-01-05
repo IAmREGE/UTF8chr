@@ -394,12 +394,12 @@ public class UTF8Char implements Comparable<UTF8Char> {
         }
     }
 
-    @Override
+    //@Override
     public int compareTo(UTF8Char o) {
         return Long.compare(this.ord(), o.ord());
     }
 
-    @Override
+    //@Override
     public boolean equals(Object o) {
         if (o instanceof UTF8Char) {
             final UTF8Char CHR = (UTF8Char)o;
@@ -408,7 +408,7 @@ public class UTF8Char implements Comparable<UTF8Char> {
         return false;
     }
 
-    @Override
+    //@Override
     public int hashCode() {
         return Long.hashCode(this.ord());
     }
@@ -425,7 +425,7 @@ public class UTF8Char implements Comparable<UTF8Char> {
         return RES;
     }
 
-    @Override
+    //@Override
     public String toString() {
         final long ORD = this.ord();
         if (ORD == -1L) {

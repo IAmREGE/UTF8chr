@@ -8,10 +8,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static java.util.Collections.sort;
+
 public class UTF8Sequence
 implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
     private final UTF8Char[] chars;
 
+    private static final UTF8Sequence[] LINESEPS;
+    public static final UTF8Sequence WHITESPACES;
+    public static final UTF8Sequence DECIMALS;
+    public static final UTF8Sequence DIGITS;
+    public static final UTF8Sequence NUMERICS;
     private static final Map<UTF8Char, Iterable<UTF8Char>> TOLOWERS;
     private static final Map<UTF8Char, Iterable<UTF8Char>> TOUPPERS;
 
@@ -105,7 +112,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         this(new long[0]);
     }
 
-    @Override
+    //@Override
     public Iterator<UTF8Char> iterator() {
         List<UTF8Char> LIST = new ArrayList<UTF8Char>();
         for (int i = 0; i < this.chars.length; i++) {
@@ -150,7 +157,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return this.chars[(i < 0) ? this.chars.length + i : i];
     }
 
-    @Override
+    //@Override
     public int compareTo(UTF8Sequence o) {
         final int MINLEN = Math.min(this.length(), o.length());
         int cmp;
@@ -162,7 +169,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return Integer.compare(this.length(), o.length());
     }
 
-    @Override
+    //@Override
     public boolean equals(Object o) {
         if (o instanceof UTF8Sequence) {
             final UTF8Sequence CVT = (UTF8Sequence)o;
@@ -187,12 +194,12 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return true;
     }
 
-    @Override
+    //@Override
     public int hashCode() {
         return Arrays.hashCode(this.chars);
     }
 
-    @Override
+    //@Override
     public String toString() {
         final StringBuilder SB = new StringBuilder();
         boolean fallback = false;
@@ -595,12 +602,390 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return decodeFrom(from, "strict");
     }
 
-    public UTF8Sequence deescape() {
-        // TODO
-        return new UTF8Sequence();
+    public UTF8Sequence unescape() {
+        /* 0: Not escaped
+         * 1: Met '\'
+         * 2: 3-digit octal, digit 1
+         * 3: 3-digit octal, digit 2
+         * 4: 2-digit hex, digit 0
+         * 5: 2-digit hex, digit 1
+         * 6: 4-digit hex, digit 0
+         * 7: 4-digit hex, digit 1
+         * 8: 4-digit hex, digit 2
+         * 9: 4-digit hex, digit 3
+         * 10: 8-digit hex, digit 0
+         * 11: 8-digit hex, digit 1
+         * 12: 8-digit hex, digit 2
+         * 13: 8-digit hex, digit 3
+         * 14: 8-digit hex, digit 4
+         * 15: 8-digit hex, digit 5
+         * 16: 8-digit hex, digit 6
+         * 17: 8-digit hex, digit 7
+         */
+        byte escapeMode = 0;
+        long escapeCodepoint = 0L;
+        final List<UTF8Char> R = new ArrayList<UTF8Char>();
+        for (UTF8Char i : this) {
+            if (i.ord() == 92L) { // '\'
+                switch (escapeMode) {
+                    case 0: {
+                        escapeMode = 1;
+                        break;
+                    }
+                    case 1: {
+                        escapeMode = 0;
+                        R.add(i);
+                        break;
+                    }
+                    case 4: {
+                        escapeMode = 1;
+                        R.add(i);
+                        R.add(new UTF8Char('x'));
+                        break;
+                    }
+                    case 6: {
+                        escapeMode = 1;
+                        R.add(i);
+                        R.add(new UTF8Char('u'));
+                        break;
+                    }
+                    case 10: {
+                        escapeMode = 1;
+                        R.add(i);
+                        R.add(new UTF8Char('U'));
+                        break;
+                    }
+                    case 2:
+                    case 3:
+                    case 5:
+                    case 7:
+                    case 8:
+                    case 9:
+                    case 11:
+                    case 12:
+                    case 13:
+                    case 14:
+                    case 15:
+                    case 16:
+                    case 17: {
+                        escapeMode = 1;
+                        R.add(new UTF8Char(escapeCodepoint));
+                        break;
+                    }
+                    default: assert false : "Unexpected escapeMode " +
+                                            Byte.toString(escapeMode);
+                }
+            } else {
+                switch (escapeMode) {
+                    case 0: {
+                        R.add(i);
+                        break;
+                    }
+                    case 1: {
+                        final long ORD = i.ord();
+                        if (ORD < 0xffffffffL) {
+                            final int ORDINT = (int)ORD;
+                            switch (ORDINT) {
+                                case 10: { // '\n'
+                                    escapeMode = 0;
+                                    break;
+                                }
+                                case 34: { // '"'
+                                    escapeMode = 0;
+                                    R.add(new UTF8Char('"'));
+                                    break;
+                                }
+                                case 39: { // '\''
+                                    escapeMode = 0;
+                                    R.add(new UTF8Char('\''));
+                                    break;
+                                }
+                                case 48: // '0'
+                                case 49: // '1'
+                                case 50: // '2'
+                                case 51: // '3'
+                                case 52: // '4'
+                                case 53: // '5'
+                                case 54: // '6'
+                                case 55: { // '7'
+                                    escapeCodepoint = ORDINT - 48L;
+                                    escapeMode = 2;
+                                    break;
+                                }
+                                case 85: { // 'U'
+                                    escapeMode = 10;
+                                    escapeCodepoint = 0L;
+                                    break;
+                                }
+                                case 97: { // 'a'
+                                    escapeMode = 0;
+                                    R.add(UTF8Char.BEL);
+                                    break;
+                                }
+                                case 98: { // 'b'
+                                    escapeMode = 0;
+                                    R.add(UTF8Char.BS);
+                                    break;
+                                }
+                                case 101: { // 'e'
+                                    escapeMode = 0;
+                                    R.add(UTF8Char.ESC);
+                                    break;
+                                }
+                                case 102: { // 'f'
+                                    escapeMode = 0;
+                                    R.add(UTF8Char.FF);
+                                    break;
+                                }
+                                case 110: { // 'n'
+                                    escapeMode = 0;
+                                    R.add(UTF8Char.LF);
+                                    break;
+                                }
+                                case 114: { // 'r'
+                                    escapeMode = 0;
+                                    R.add(UTF8Char.CR);
+                                    break;
+                                }
+                                case 116: { // 't'
+                                    escapeMode = 0;
+                                    R.add(UTF8Char.HT);
+                                    break;
+                                }
+                                case 117: { // 'u'
+                                    escapeMode = 6;
+                                    escapeCodepoint = 0L;
+                                    break;
+                                }
+                                case 118: { // 'v'
+                                    escapeMode = 0;
+                                    R.add(UTF8Char.VT);
+                                    break;
+                                }
+                                case 120: { // 'x'
+                                    escapeMode = 4;
+                                    escapeCodepoint = 0L;
+                                    break;
+                                }
+                                default: {
+                                    escapeMode = 0;
+                                    R.add(new UTF8Char('\\'));
+                                    R.add(i);
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case 2:
+                    case 3: {
+                        final long ORD = i.ord();
+                        if (48L <= ORD && ORD <= 55L) {
+                            escapeCodepoint *= 8L;
+                            escapeCodepoint += ORD - 48L;
+                            if (escapeMode == (byte)3) {
+                                escapeMode = 0;
+                                R.add(new UTF8Char(escapeCodepoint));
+                            } else {
+                                escapeMode = 3;
+                            }
+                        } else {
+                            escapeMode = 0;
+                            R.add(new UTF8Char(escapeCodepoint));
+                        }
+                        break;
+                    }
+                    case 4: {
+                        final long ORD = i.ord();
+                        escapeMode = 5;
+                        if (48L <= ORD && ORD <= 57L) {
+                            escapeCodepoint = ORD - 48L;
+                        } else if (65L <= ORD && ORD <= 70L) {
+                            escapeCodepoint = ORD - 55L;
+                        } else if (97L <= ORD && ORD <= 102L) {
+                            escapeCodepoint = ORD - 87L;
+                        } else {
+                            escapeMode = 0;
+                            R.add(new UTF8Char('\\'));
+                            R.add(new UTF8Char('x'));
+                            R.add(i);
+                        }
+                        break;
+                    }
+                    case 5: {
+                        final long ORD = i.ord();
+                        escapeMode = 0;
+                        if (48L <= ORD && ORD <= 57L) {
+                            escapeCodepoint *= 8L;
+                            escapeCodepoint += ORD - 48L;
+                            R.add(new UTF8Char(escapeCodepoint));
+                        } else if (65L <= ORD && ORD <= 70L) {
+                            escapeCodepoint *= 8L;
+                            escapeCodepoint += ORD - 55L;
+                            R.add(new UTF8Char(escapeCodepoint));
+                        } else if (97L <= ORD && ORD <= 102L) {
+                            escapeCodepoint *= 8L;
+                            escapeCodepoint += ORD - 87L;
+                            R.add(new UTF8Char(escapeCodepoint));
+                        } else {
+                            R.add(new UTF8Char(escapeCodepoint));
+                            R.add(i);
+                        }
+                        break;
+                    }
+                    case 6: {
+                        final long ORD = i.ord();
+                        escapeMode = 7;
+                        if (48L <= ORD && ORD <= 57L) {
+                            escapeCodepoint = ORD - 48L;
+                        } else if (65L <= ORD && ORD <= 70L) {
+                            escapeCodepoint = ORD - 55L;
+                        } else if (97L <= ORD && ORD <= 102L) {
+                            escapeCodepoint = ORD - 87L;
+                        } else {
+                            escapeMode = 0;
+                            R.add(new UTF8Char('\\'));
+                            R.add(new UTF8Char('u'));
+                            R.add(i);
+                        }
+                        break;
+                    }
+                    case 7:
+                    case 8:
+                    case 9: {
+                        final long ORD = i.ord();
+                        escapeMode++;
+                        if (48L <= ORD && ORD <= 57L) {
+                            escapeCodepoint *= 16L;
+                            escapeCodepoint += ORD - 48L;
+                            if (escapeMode == (byte)10) {
+                                escapeMode = 0;
+                                R.add(new UTF8Char(escapeCodepoint));
+                            }
+                        } else if (65L <= ORD && ORD <= 70L) {
+                            escapeCodepoint *= 16L;
+                            escapeCodepoint += ORD - 55L;
+                            if (escapeMode == (byte)10) {
+                                escapeMode = 0;
+                                R.add(new UTF8Char(escapeCodepoint));
+                            }
+                        } else if (97L <= ORD && ORD <= 102L) {
+                            escapeCodepoint *= 16L;
+                            escapeCodepoint += ORD - 87L;
+                            if (escapeMode == (byte)10) {
+                                escapeMode = 0;
+                                R.add(new UTF8Char(escapeCodepoint));
+                            }
+                        } else {
+                            escapeMode = 0;
+                            R.add(new UTF8Char(escapeCodepoint));
+                            R.add(i);
+                        }
+                        break;
+                    }
+                    case 10: {
+                        final long ORD = i.ord();
+                        escapeMode = 11;
+                        if (48L <= ORD && ORD <= 57L) {
+                            escapeCodepoint = ORD - 48L;
+                        } else if (65L <= ORD && ORD <= 70L) {
+                            escapeCodepoint = ORD - 55L;
+                        } else if (97L <= ORD && ORD <= 102L) {
+                            escapeCodepoint = ORD - 87L;
+                        } else {
+                            escapeMode = 0;
+                            R.add(new UTF8Char('\\'));
+                            R.add(new UTF8Char('U'));
+                            R.add(i);
+                        }
+                        break;
+                    }
+                    case 11:
+                    case 12:
+                    case 13:
+                    case 14:
+                    case 15:
+                    case 16:
+                    case 17: {
+                        final long ORD = i.ord();
+                        escapeMode++;
+                        if (48L <= ORD && ORD <= 57L) {
+                            escapeCodepoint *= 16L;
+                            escapeCodepoint += ORD - 48L;
+                            if (escapeMode == (byte)18) {
+                                escapeMode = 0;
+                                R.add(new UTF8Char(escapeCodepoint));
+                            }
+                        } else if (65L <= ORD && ORD <= 70L) {
+                            escapeCodepoint *= 16L;
+                            escapeCodepoint += ORD - 55L;
+                            if (escapeMode == (byte)18) {
+                                escapeMode = 0;
+                                R.add(new UTF8Char(escapeCodepoint));
+                            }
+                        } else if (97L <= ORD && ORD <= 102L) {
+                            escapeCodepoint *= 16L;
+                            escapeCodepoint += ORD - 87L;
+                            if (escapeMode == (byte)18) {
+                                escapeMode = 0;
+                                R.add(new UTF8Char(escapeCodepoint));
+                            }
+                        } else {
+                            escapeMode = 0;
+                            R.add(new UTF8Char(escapeCodepoint));
+                            R.add(i);
+                        }
+                        break;
+                    }
+                    default: assert false : "Unexpected escapeMode " +
+                                            Byte.toString(escapeMode);
+                }
+            }
+        }
+        switch (escapeMode) {
+            case 0: break;
+            case 1: {
+                R.add(new UTF8Char('\\'));
+                break;
+            }
+            case 4: {
+                R.add(new UTF8Char('\\'));
+                R.add(new UTF8Char('x'));
+                break;
+            }
+            case 6: {
+                R.add(new UTF8Char('\\'));
+                R.add(new UTF8Char('u'));
+                break;
+            }
+            case 10: {
+                R.add(new UTF8Char('\\'));
+                R.add(new UTF8Char('U'));
+                break;
+            }
+            case 2:
+            case 3:
+            case 5:
+            case 7:
+            case 8:
+            case 9:
+            case 11:
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+            case 17: {
+                R.add(new UTF8Char(escapeCodepoint));
+                break;
+            }
+            default: assert false : "Unexpected escapeMode " +
+                                    Byte.toString(escapeMode);
+        }
+        return new UTF8Sequence(R);
     }
 
-    public UTF8Sequence toUpperCase() {
+    public UTF8Sequence upper() {
         final List<UTF8Char> R = new ArrayList<UTF8Char>();
         for (UTF8Char i : this) {
             if (TOUPPERS.containsKey(i)) {
@@ -614,7 +999,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return new UTF8Sequence(R);
     }
 
-    public UTF8Sequence toLowerCase() {
+    public UTF8Sequence lower() {
         final List<UTF8Char> R = new ArrayList<UTF8Char>();
         for (UTF8Char i : this) {
             if (TOLOWERS.containsKey(i)) {
@@ -782,6 +1167,10 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return res;
     }
 
+    public int count(long sub) {
+        return this.count(new UTF8Char(sub));
+    }
+
     public int count(UTF8Sequence sub, boolean allowOverlap) {
         int res = 0;
         final int CW = this.chars.length - sub.chars.length;
@@ -799,8 +1188,479 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
     }
 
     public int[] indicesOf(UTF8Char sub, int fromIndex) {
-        // TODO
-        return null;
+        final List<Integer> R = new ArrayList<Integer>();
+        for (int i = fromIndex; i < this.chars.length; i++) {
+            if (sub.equals(this.chars[i])) {
+                R.add(Integer.valueOf(i));
+            }
+        }
+        final int[] RES = new int[R.size()];
+        for (int i = 0; i < RES.length; i++) {
+            RES[i] = R.get(i).intValue();
+        }
+        return RES;
+    }
+
+    public int[] indicesOf(UTF8Char sub) {
+        return this.indicesOf(sub, 0);
+    }
+
+    public int[] indicesOf(long sub, int fromIndex) {
+        return this.indicesOf(new UTF8Char(sub), fromIndex);
+    }
+
+    public int[] indicesOf(long sub) {
+        return this.indicesOf(new UTF8Char(sub), 0);
+    }
+
+    public int[]
+    indicesOf(UTF8Sequence sub, boolean allowOverlap, int fromIndex) {
+        if (sub.isEmpty()) {
+            if (this.chars.length - fromIndex >= 0) {
+                final int[] RES = new int[this.chars.length - fromIndex + 1];
+                for (int i = fromIndex; i <= this.chars.length; i++) {
+                    RES[i - fromIndex] = i;
+                }
+            }
+            return new int[0];
+        }
+        if (this.isEmpty()) {
+            return new int[0];
+        }
+        final int CW = this.chars.length - sub.chars.length;
+        final List<Integer> R = new ArrayList<Integer>();
+        for (int i = fromIndex; i <= CW;) {
+            if (sub.equals(this.subSequence(i, i + sub.chars.length))) {
+                R.add(Integer.valueOf(i));
+            }
+            if (allowOverlap || sub.chars.length == 0) {
+                i++;
+            } else {
+                i += sub.chars.length;
+            }
+        }
+        final int[] RES = new int[R.size()];
+        for (int i = 0; i < RES.length; i++) {
+            RES[i] = R.get(i).intValue();
+        }
+        return RES;
+    }
+
+    public int[]
+    indicesOf(UTF8Sequence sub, int fromIndex, boolean allowOverlap) {
+        return this.indicesOf(sub, allowOverlap, fromIndex);
+    }
+
+    public int[] indicesOf(UTF8Sequence sub, boolean allowOverlap) {
+        return this.indicesOf(sub, allowOverlap, 0);
+    }
+
+    public UTF8Sequence[] split(UTF8Sequence sep, int maxsplit)
+    throws IllegalArgumentException {
+        if (sep.isEmpty()) {
+            throw new IllegalArgumentException("empty separator");
+        }
+        final int[] INDICES = this.indicesOf(sep, false);
+        if (maxsplit >= 0 && INDICES.length > maxsplit) {
+            final UTF8Sequence[] RES = new UTF8Sequence[maxsplit + 1];
+            int startIndex = 0;
+            for (int i = 0; i < maxsplit; i++) {
+                RES[i] = this.subSequence(startIndex, INDICES[i]);
+                startIndex = INDICES[i] + sep.chars.length;
+            }
+            RES[maxsplit] = this.subSequence(startIndex);
+            return RES;
+        }
+        final UTF8Sequence[] RES = new UTF8Sequence[INDICES.length + 1];
+        int startIndex = 0;
+        for (int i = 0; i < INDICES.length; i++) {
+            RES[i] = this.subSequence(startIndex, INDICES[i]);
+            startIndex = INDICES[i] + sep.chars.length;
+        }
+        RES[maxsplit] = this.subSequence(startIndex);
+        return RES;
+    }
+
+    public UTF8Sequence[] split(UTF8Sequence sep)
+    throws IllegalArgumentException {
+        return this.split(sep, -1);
+    }
+
+    public UTF8Sequence[] split(UTF8Char sep, int maxsplit) {
+        final int[] INDICES = this.indicesOf(sep);
+        if (maxsplit >= 0 && INDICES.length > maxsplit) {
+            final UTF8Sequence[] RES = new UTF8Sequence[maxsplit + 1];
+            int startIndex = 0;
+            for (int i = 0; i < maxsplit; i++) {
+                RES[i] = this.subSequence(startIndex, INDICES[i]);
+                startIndex = INDICES[i] + 1;
+            }
+            RES[maxsplit] = this.subSequence(startIndex);
+            return RES;
+        }
+        final UTF8Sequence[] RES = new UTF8Sequence[INDICES.length + 1];
+        int startIndex = 0;
+        for (int i = 0; i < INDICES.length; i++) {
+            RES[i] = this.subSequence(startIndex, INDICES[i]);
+            startIndex = INDICES[i] + 1;
+        }
+        RES[INDICES.length] = this.subSequence(startIndex);
+        return RES;
+    }
+
+    public UTF8Sequence[] split(UTF8Char sep) {
+        return this.split(sep, -1);
+    }
+
+    public UTF8Sequence[] split(int maxsplit) {
+        final UTF8Sequence STRIPPED = this.strip();
+        final List<Integer> ALL_INDICES = new ArrayList<Integer>();
+        for (UTF8Char i : WHITESPACES) {
+            final int[] INDICES = STRIPPED.indicesOf(i);
+            for (int j = 0; j < INDICES.length; j++) {
+                ALL_INDICES.add(Integer.valueOf(INDICES[j]));
+            }
+        }
+        sort(ALL_INDICES);
+        if (maxsplit >= 0 && ALL_INDICES.size() > maxsplit) {
+            final UTF8Sequence[] RES = new UTF8Sequence[maxsplit + 1];
+            int startIndex = 0;
+            for (int i = 0; i < maxsplit; i++) {
+                RES[i] = STRIPPED.subSequence(startIndex, ALL_INDICES.get(i)
+                                                          .intValue());
+                startIndex = ALL_INDICES.get(i).intValue() + 1;
+            }
+            RES[maxsplit] = STRIPPED.subSequence(startIndex);
+            return RES;
+        }
+        final int SIZE = ALL_INDICES.size();
+        final UTF8Sequence[] RES = new UTF8Sequence[SIZE + 1];
+        int startIndex = 0;
+        for (int i = 0; i < SIZE; i++) {
+            RES[i] = STRIPPED
+                     .subSequence(startIndex, ALL_INDICES.get(i).intValue());
+            startIndex = ALL_INDICES.get(i).intValue() + 1;
+        }
+        RES[SIZE] = STRIPPED.subSequence(startIndex);
+        return RES;
+    }
+
+    public UTF8Sequence[] split() {
+        return this.split(-1);
+    }
+
+    public UTF8Sequence[] splitlines(boolean keepends) {
+        final Map<Integer, UTF8Sequence> ALL_INDICES =
+        new HashMap<Integer, UTF8Sequence>();
+        for (int i = 0; i < LINESEPS.length; i++) {
+            final int[] INDICES = this.indicesOf(LINESEPS[i], false);
+            for (int j = 0; i < INDICES.length; j++) {
+                ALL_INDICES.put(Integer.valueOf(INDICES[j]), LINESEPS[i]);
+            }
+        }
+        final int SIZE = ALL_INDICES.size();
+        final List<Integer> INDICES = new ArrayList<Integer>();
+        INDICES.addAll(ALL_INDICES.keySet());
+        sort(INDICES);
+        final boolean ENDSEP = INDICES.get(SIZE - 1).intValue() +
+                               ALL_INDICES.get(INDICES.get(SIZE - 1))
+                               .chars.length == this.chars.length;
+        final UTF8Sequence[] RES = new UTF8Sequence[SIZE + (ENDSEP ? 0 : 1)];
+        int startIndex = 0;
+        for (int i = 0; i < SIZE; i++) {
+            RES[i] = this.subSequence(
+                startIndex, INDICES.get(i).intValue() +
+                            (keepends ?
+                             ALL_INDICES.get(INDICES.get(i)).chars.length : 0)
+            );
+            startIndex = INDICES.get(i).intValue() +
+                         ALL_INDICES.get(INDICES.get(i)).chars.length;
+        }
+        if (!ENDSEP) {
+            RES[SIZE] = this.subSequence(startIndex);
+        }
+        return RES;
+    }
+
+    public UTF8Sequence[] splitlines() {
+        return this.splitlines(false);
+    }
+
+    public UTF8SequencePartition partition(UTF8Sequence sep) {
+        final UTF8Sequence[] E = this.split(sep, 1);
+        return (E.length == 2) ? new UTF8SequencePartition(E[0], sep, E[1]) :
+               new UTF8SequencePartition(this, new UTF8Sequence(),
+                                         new UTF8Sequence());
+    }
+
+    public UTF8SequencePartition partition(UTF8Char sep) {
+        final UTF8Sequence[] E = this.split(sep, 1);
+        return (E.length == 2) ?
+               new UTF8SequencePartition(E[0], new UTF8Sequence(sep), E[1]) :
+               new UTF8SequencePartition(this, new UTF8Sequence(),
+                                         new UTF8Sequence());
+    }
+
+    public UTF8Sequence lstrip(UTF8Sequence chars) {
+        if (chars == null) {
+            chars = WHITESPACES;
+        }
+        int stripIndex = 0;
+        while (stripIndex < this.chars.length) {
+            if (chars.indexOf(this.chars[stripIndex]) == -1) {
+                break;
+            }
+            stripIndex++;
+        }
+        return (stripIndex != 0) ? this.subSequence(stripIndex) : this;
+    }
+
+    public UTF8Sequence lstrip(UTF8Char chars) {
+        if (chars == null) {
+            return this.lstrip(WHITESPACES);
+        }
+        int stripIndex = 0;
+        while (stripIndex < this.chars.length) {
+            if (!(chars.equals(this.chars[stripIndex]))) {
+                break;
+            }
+            stripIndex++;
+        }
+        return (stripIndex != 0) ? this.subSequence(stripIndex) : this;
+    }
+
+    public UTF8Sequence lstrip() {
+        return this.lstrip(WHITESPACES);
+    }
+
+    public UTF8Sequence rstrip(UTF8Sequence chars) {
+        if (chars == null) {
+            chars = WHITESPACES;
+        }
+        int stripIndex = this.chars.length - 1;
+        while (stripIndex >= 0) {
+            if (chars.indexOf(this.chars[stripIndex]) == -1) {
+                break;
+            }
+            stripIndex--;
+        }
+        return (stripIndex != this.chars.length - 1) ?
+               this.subSequence(0, stripIndex + 1) : this;
+    }
+
+    public UTF8Sequence rstrip(UTF8Char chars) {
+        if (chars == null) {
+            return this.rstrip(WHITESPACES);
+        }
+        int stripIndex = this.chars.length - 1;
+        while (stripIndex >= 0) {
+            if (!(chars.equals(this.chars[stripIndex]))) {
+                break;
+            }
+            stripIndex--;
+        }
+        return (stripIndex != this.chars.length - 1) ?
+               this.subSequence(0, stripIndex + 1) : this;
+    }
+
+    public UTF8Sequence rstrip() {
+        return this.rstrip(WHITESPACES);
+    }
+
+    public UTF8Sequence strip(UTF8Sequence chars) {
+        if (chars == null) {
+            chars = WHITESPACES;
+        }
+        int stripIndexStart = 0;
+        while (stripIndexStart < this.chars.length) {
+            if (chars.indexOf(this.chars[stripIndexStart]) == -1) {
+                break;
+            }
+            stripIndexStart++;
+        }
+        int stripIndexEnd = this.chars.length - 1;
+        while (stripIndexEnd >= 0) {
+            if (chars.indexOf(this.chars[stripIndexEnd]) == -1) {
+                break;
+            }
+            stripIndexEnd--;
+        }
+        return (stripIndexStart != 0 || stripIndexEnd != this.chars.length - 1)
+               ? this.subSequence(stripIndexStart, stripIndexEnd + 1) : this;
+    }
+
+    public UTF8Sequence strip(UTF8Char chars) {
+        if (chars == null) {
+            return this.strip(WHITESPACES);
+        }
+        int stripIndexStart = 0;
+        while (stripIndexStart < this.chars.length) {
+            if ((chars.equals(this.chars[stripIndexStart]))) {
+                break;
+            }
+            stripIndexStart++;
+        }
+        int stripIndexEnd = this.chars.length - 1;
+        while (stripIndexEnd >= 0) {
+            if ((chars.equals(this.chars[stripIndexEnd]))) {
+                break;
+            }
+            stripIndexEnd--;
+        }
+        return (stripIndexStart != 0 || stripIndexEnd != this.chars.length - 1)
+               ? this.subSequence(stripIndexStart, stripIndexEnd + 1) : this;
+    }
+
+    public UTF8Sequence strip() {
+        return this.strip(WHITESPACES);
+    }
+
+    public UTF8Sequence trim() {
+        return this.strip(new UTF8Sequence(new long[]{
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+            19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+        }));
+    }
+
+    public boolean isupper() {
+        return this.equals(this.upper());
+    }
+
+    public boolean islower() {
+        return this.equals(this.lower());
+    }
+
+    public UTF8Sequence
+    replace(UTF8Sequence old, UTF8Sequence new_, int count) {
+        if (count == 0 || old.equals(new_)) {
+            return this;
+        }
+        if (!(old.isEmpty())) {
+            return new_.join(this.split(old, count));
+        }
+        final List<UTF8Char> P = new ArrayList<UTF8Char>();
+        for (UTF8Char i : new_) {
+            P.add(i);
+        }
+        final List<UTF8Char> R = new ArrayList<UTF8Char>();
+        for (UTF8Char i : this) {
+            R.addAll(P);
+            R.add(i);
+            count--;
+            if (count <= 0) {
+                return new UTF8Sequence(R);
+            }
+        }
+        R.addAll(P);
+        return new UTF8Sequence(R);
+    }
+
+    public UTF8Sequence replace(UTF8Sequence old, UTF8Sequence new_) {
+        return this.replace(old, new_, -1);
+    }
+
+    public UTF8Sequence replace(UTF8Sequence old, UTF8Char new_, int count) {
+        if (count == 0 || old.equals(new UTF8Sequence(new_))) {
+            return this;
+        }
+        if (!(old.isEmpty())) {
+            return join(new_, this.split(old, count));
+        }
+        final List<UTF8Char> R = new ArrayList<UTF8Char>();
+        for (UTF8Char i : this) {
+            R.add(new_);
+            R.add(i);
+            count--;
+            if (count <= 0) {
+                return new UTF8Sequence(R);
+            }
+        }
+        R.add(new_);
+        return new UTF8Sequence(R);
+    }
+
+    public UTF8Sequence replace(UTF8Sequence old, UTF8Char new_) {
+        return this.replace(old, new_, -1);
+    }
+
+    public UTF8Sequence replace(UTF8Char old, UTF8Sequence new_, int count) {
+        if (count == 0 || new UTF8Sequence(old).equals(new_)) {
+            return this;
+        }
+        return new_.join(this.split(old, count));
+    }
+
+    public UTF8Sequence replace(UTF8Char old, UTF8Sequence new_) {
+        return this.replace(old, new_, -1);
+    }
+
+    public UTF8Sequence replace(UTF8Char old, UTF8Char new_, int count) {
+        if (count == 0 || old.equals(new_)) {
+            return this;
+        }
+        return join(new_, this.split(old, count));
+    }
+
+    public UTF8Sequence replace(UTF8Char old, UTF8Char new_) {
+        return this.replace(old, new_, -1);
+    }
+
+    public boolean startswith(UTF8Sequence prefix, int start, int end) {
+        if (prefix.isEmpty()) {
+            return start <= -this.chars.length ||
+                   (start <= this.chars.length && start >= 0 && end >= 0 &&
+                    start <= end) ||
+                   (start <= this.chars.length && start >= 0 && end < 0 &&
+                    start <= end + this.chars.length) ||
+                   (start <= this.chars.length && start < 0 && end >= 0 &&
+                    start + this.chars.length <= end) ||
+                   (start <= this.chars.length && start < 0 && end < 0 &&
+                    start <= end);
+        }
+        if (start < 0) {
+            start += this.chars.length;
+            if (start < 0) {
+                start = 0;
+            }
+        } else if (start > this.chars.length) {
+            start = this.chars.length;
+        }
+        if (end < 0) {
+            end += this.chars.length;
+            if (end < 0) {
+                end = 0;
+            }
+        } else if (end > this.chars.length) {
+            end = this.chars.length;
+        }
+        return end - start < prefix.chars.length &&
+               this.subSequence(start, start + prefix.chars.length)
+               .equals(prefix);
+    }
+
+    public boolean startswith(UTF8Sequence prefix, int start) {
+        return this.startswith(prefix, start, this.chars.length);
+    }
+
+    public boolean startswith(UTF8Sequence prefix) {
+        return this.startswith(prefix, 0, this.chars.length);
+    }
+
+    public boolean startsWith(UTF8Sequence prefix, int toffset) {
+        if (toffset < 0) {
+            return false;
+        }
+        if (toffset > 0) {
+            return this.subSequence(toffset).startsWith(prefix, 0);
+        }
+        if (prefix.chars.length > this.chars.length) {
+            return false;
+        }
+        return this.subSequence(0, prefix.chars.length).equals(prefix);
+    }
+
+    public boolean startsWith(UTF8Sequence prefix) {
+        return this.startsWith(prefix, 0);
     }
 
     private static void registerPairs(UTF8Char upper, UTF8Char lower) {
@@ -814,6 +1674,19 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
     }
 
     static {
+        LINESEPS = new UTF8Sequence[]{
+            new UTF8Sequence(UTF8Char.VT),
+            new UTF8Sequence(UTF8Char.LF),
+            new UTF8Sequence(UTF8Char.CR),
+            new UTF8Sequence(new UTF8Char[]{UTF8Char.CR, UTF8Char.LF})
+        };
+        WHITESPACES = new UTF8Sequence(new UTF8Char[]{
+            UTF8Char.HT, UTF8Char.VT, UTF8Char.LF, UTF8Char.CR,
+            new UTF8Char(' '), UTF8Char.NBSP, UTF8Char.IDSP
+        });
+        DECIMALS = new UTF8Sequence();
+        DIGITS = new UTF8Sequence();
+        NUMERICS = new UTF8Sequence();
         TOLOWERS = new HashMap<UTF8Char, Iterable<UTF8Char>>();
         TOUPPERS = new HashMap<UTF8Char, Iterable<UTF8Char>>();
         registerPairs('A', 'a');

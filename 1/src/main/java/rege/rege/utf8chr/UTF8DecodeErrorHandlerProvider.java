@@ -15,17 +15,17 @@ public interface UTF8DecodeErrorHandlerProvider {
             this.replaceSeq = replaceSeq;
         }
 
-        @Override
+        //@Override
         public final Integer getKey() {
             return this.newPos;
         }
 
-        @Override
+        //@Override
         public final UTF8Sequence getValue() {
             return this.replaceSeq;
         }
 
-        @Override
+        //@Override
         public final UTF8Sequence setValue(Iterable<UTF8Char> value) {
             throw new UnsupportedOperationException();
         }

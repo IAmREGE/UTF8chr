@@ -14,7 +14,7 @@ public class UTF8DecodeErrorHandler {
     static {
         HANDLER = new HashMap<String, UTF8DecodeErrorHandlerProvider>();
         HANDLER.put("strict", new UTF8DecodeErrorHandlerProvider() {
-            @Override
+            //@Override
             public Map.Entry<Integer, Iterable<UTF8Char>>
             provide(int origPos, byte[] bytes) throws UTF8CharDecodeException {
                 final StringBuilder SB = new StringBuilder();
@@ -33,7 +33,7 @@ public class UTF8DecodeErrorHandler {
             }
         });
         HANDLER.put("ignore", new UTF8DecodeErrorHandlerProvider() {
-            @Override
+            //@Override
             public Map.Entry<Integer, Iterable<UTF8Char>>
             provide(int origPos, byte[] bytes) {
                 return new UTF8DecodeErrorHandlerProvider.ProvidedEntry(
@@ -42,7 +42,7 @@ public class UTF8DecodeErrorHandler {
             }
         });
         HANDLER.put("replace", new UTF8DecodeErrorHandlerProvider() {
-            @Override
+            //@Override
             public Map.Entry<Integer, Iterable<UTF8Char>>
             provide(int origPos, byte[] bytes) {
                 return new UTF8DecodeErrorHandlerProvider.ProvidedEntry(
@@ -52,17 +52,14 @@ public class UTF8DecodeErrorHandler {
             }
         });
         HANDLER.put("surrogateescape", new UTF8DecodeErrorHandlerProvider() {
-            @Override
+            //@Override
             public Map.Entry<Integer, Iterable<UTF8Char>>
             provide(int origPos, byte[] bytes) {
-                final UTF8Char[] R = new UTF8Char[bytes.length];
-                for (int i = 0; i < R.length; i++) {
-                    R[i] = new UTF8Char((bytes[i] < 0) ? 0xdd00L + bytes[i] :
-                                        bytes[i]);
-                }
                 return new UTF8DecodeErrorHandlerProvider.ProvidedEntry(
-                    Integer.valueOf(origPos + bytes.length),
-                    new UTF8Sequence(R)
+                    Integer.valueOf(origPos + 1),
+                    new UTF8Sequence(new UTF8Char(
+                        (bytes[0] < 0) ? 0xdd00L + bytes[0] : bytes[0]
+                    ))
                 );
             }
         });
