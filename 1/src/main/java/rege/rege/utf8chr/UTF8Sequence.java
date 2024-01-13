@@ -125,7 +125,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
 
     /**
      * @param i Equivalent to {@code new UTF8Sequence(Long.toString(i))}. @see
-     * {@link java.lang.Long}, {@link UTF8Sequence#UTF8Sequence(String)}
+     * {@link java.lang.Long}, {@link #UTF8Sequence(String)}
      */
     public UTF8Sequence(long i) {
         this(Long.toString(i));
@@ -133,7 +133,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
 
     /**
      * @param i Equivalent to {@code new UTF8Sequence(Integer.toString(i))}.
-     * @see {@link java.lang.Integer},{@link UTF8Sequence#UTF8Sequence(String)}
+     * @see {@link java.lang.Integer},{@link #UTF8Sequence(String)}
      */
     public UTF8Sequence(int i) {
         this(Integer.toString(i));
@@ -141,7 +141,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
 
     /**
      * @param i Equivalent to {@code new UTF8Sequence(Short.toString(i))}. @see
-     * {@link java.lang.Short}, {@link UTF8Sequence#UTF8Sequence(String)}
+     * {@link java.lang.Short}, {@link #UTF8Sequence(String)}
      */
     public UTF8Sequence(short i) {
         this(Short.toString(i));
@@ -149,7 +149,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
 
     /**
      * @param i Equivalent to {@code new UTF8Sequence(Byte.toString(i))}. @see
-     * {@link java.lang.Byte}, {@link UTF8Sequence#UTF8Sequence(String)}
+     * {@link java.lang.Byte}, {@link #UTF8Sequence(String)}
      */
     public UTF8Sequence(byte i) {
         this(Byte.toString(i));
@@ -157,7 +157,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
 
     /**
      * @param i Equivalent to {@code new UTF8Sequence(Float.toString(i))}. @see
-     * {@link java.lang.Float}, {@link UTF8Sequence#UTF8Sequence(String)}
+     * {@link java.lang.Float}, {@link #UTF8Sequence(String)}
      */
     public UTF8Sequence(float i) {
         this(Float.toString(i));
@@ -165,7 +165,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
 
     /**
      * @param i Equivalent to {@code new UTF8Sequence(Double.toString(i))}.
-     * @see {@link java.lang.Double}, {@link UTF8Sequence#UTF8Sequence(String)}
+     * @see {@link java.lang.Double}, {@link #UTF8Sequence(String)}
      */
     public UTF8Sequence(double i) {
         this(Double.toString(i));
@@ -174,7 +174,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
     /**
      * @param i Equivalent to
      * {@code new UTF8Sequence(new UTF8Char[]&#123;i&#125;)}. @see
-     * {@link UTF8Sequence#UTF8Sequence(UTF8Char[])}
+     * {@link #UTF8Sequence(UTF8Char[])}
      * @throws NullPointerException If the character is null.
      * @see UTF8Char
      */
@@ -185,7 +185,7 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
     /**
      * @param i Equivalent to
      * {@code new UTF8Sequence(new UTF8Char[]&#123;new UTF8Char(i)&#125;)}.
-     * @see {@link UTF8Sequence#UTF8Sequence(UTF8Char[])}
+     * @see {@link #UTF8Sequence(UTF8Char[])}
      */
     public UTF8Sequence(char i) {
         this(new UTF8Char[]{new UTF8Char(i)});
@@ -207,6 +207,13 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return LIST.iterator();
     }
 
+    /**
+     * @return An array contains 1-length {@link UTF8Sequence}s.
+     * e.g. {@code new UTF8Sequence("test").singles()} will return
+     * {@code new UTF8Sequence[]&#123;new UTF8Sequence('t'),
+     * new UTF8Sequence('e'), new UTF8Sequence('s'),
+     * new UTF8Sequence('t')&#125;}.
+     */
     public UTF8Sequence[] singles() {
         UTF8Sequence[] R = new UTF8Sequence[this.chars.length];
         for (int i = 0; i < R.length; i++) {
@@ -215,10 +222,18 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return R;
     }
 
+    /**
+     * @return The length of this sequence. e.g.
+     * {@code new UTF8Sequence("test").length()} will return {@code 4}.
+     */
     public int length() {
         return this.chars.length;
     }
 
+    /**
+     * @return The length of this sequence encoded to bytes. e.g.
+     * {@code new UTF8Sequence("\u6d4b\u8bd5").length()} will return {@code 6}.
+     */
     public long byteLength() {
         long res = 0L;
         for (UTF8Char i : this) {
@@ -239,6 +254,14 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return RES;
     }
 
+    /**
+     * @return a byte array of encoded sequence. e.g.
+     * {@code new UTF8Sequence("\u6d4b\u8bd5").getBytes()} will return
+     * {@code new byte[]&#123;-26, -75, -117, -24, -81, -107&#125;}.
+     * @throws IndexOutOfBoundsException if
+     * {@code this.byteLength() > 0x7fffffffL}. @see
+     * {@link UTF8Sequence#byteLength()}.
+     */
     public byte[] getBytes() throws IndexOutOfBoundsException {
         final long LENGTH = this.byteLength();
         if (LENGTH > 0x7fffffffL) {
@@ -257,6 +280,16 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return RES;
     }
 
+    /**
+     * @param i The index to get, count from 0.
+     * @return The character at index {@code i}. If {@code i} is negative, it
+     * is equivalent to {@code this.charAt(this.length() - i)}. e.g.
+     * {@code new UTF8Sequence("test").charAt(-3)} will return
+     * {@code new UTF8Char('e')}.
+     * @throws IndexOutOfBoundsException If
+     * {@code i >= this.length() || i < -this.length()}. @see
+     * {@link UTF8Sequence#byteLength()}.
+     */
     public UTF8Char charAt(int i) throws IndexOutOfBoundsException {
         return this.chars[(i < 0) ? this.chars.length + i : i];
     }
@@ -273,7 +306,12 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return Integer.compare(this.length(), o.length());
     }
 
-    //@Override
+    /**
+     * @param o Another object.
+     * @return A boolean reflects whether two sequences are equal, the
+     * regulars are ignored.
+     */
+    @Override
     public boolean equals(Object o) {
         if (o instanceof UTF8Sequence) {
             final UTF8Sequence CVT = (UTF8Sequence)o;
@@ -285,10 +323,17 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return false;
     }
 
+    /**
+     * @return A boolean reflect whether this sequence is empty.
+     */
     public boolean isEmpty() {
         return this.chars.length == 0;
     }
 
+    /**
+     * @return A boolean reflect whether this sequence is going to write
+     * nothing.
+     */
     public boolean isWriteEmpty() {
         for (UTF8Char i : this) {
             if (!(i.equals(UTF8Char.EOF))) {
@@ -298,12 +343,12 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return true;
     }
 
-    //@Override
+    @Override
     public int hashCode() {
         return Arrays.hashCode(this.chars);
     }
 
-    //@Override
+    @Override
     public String toString() {
         final StringBuilder SB = new StringBuilder();
         boolean fallback = false;
@@ -332,6 +377,11 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return SB.toString();
     }
 
+    /**
+     * @param seqs The sequences to concatenate to this.
+     * @return A UTF8Sequence with combined content, from less index to
+     * greater index.
+     */
     public UTF8Sequence concat(UTF8Sequence... seqs) {
         final List<UTF8Char> R = new ArrayList<UTF8Char>();
         for (UTF8Char i : this) {
@@ -345,6 +395,15 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return new UTF8Sequence(R);
     }
 
+    /**
+     * @param value
+     * @return A Python-like value of {@code this*value}. e.g.
+     * {@code new UTF8Sequence("test").times(3)} will return
+     * {@code new UTF8Sequence("testtesttest")}, and
+     * {@code new UTF8Sequence("test").times(-3)} will return
+     * {@code new UTF8Sequence()}. Unlike {@link #repeat(int)}, it will not
+     * throw an exception when {@code value} is negative.
+     */
     public UTF8Sequence times(int value) {
         if (value <= 0) {
             return new UTF8Sequence();
@@ -365,6 +424,18 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return this.times(count);
     }
 
+    /**
+     * @param start
+     * @param stop
+     * @param step
+     * @return A Python-like value of {@code this[start:stop:step]}, with
+     * {@code null = None}. e.g.
+     * {@code new UTF8Sequence("test").slice(null, null, -1)} will return
+     * {@code new UTF8Sequence("tset")}, and
+     * {@code new UTF8Sequence("test").slice(1, -1, null)} will return
+     * {@code new UTF8Sequence("es")}.
+     * @throws IllegalArgumentException When {@code step.intValue() == 0}.
+     */
     public UTF8Sequence slice(Integer start, Integer stop, Integer step)
     throws IllegalArgumentException {
         final int STEP = (step != null) ? step.intValue() : 1;
@@ -437,6 +508,11 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return new UTF8Sequence(R);
     }
 
+    /**
+     * @param start
+     * @param stop
+     * @return @see {@link #slice(Integer, Integer, Integer)}
+     */
     public UTF8Sequence slice(Integer start, Integer stop) {
         return this.slice(start, stop, Integer.valueOf(1));
     }
@@ -1671,6 +1747,9 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
                 break;
             }
             stripIndexEnd--;
+            if (stripIndexStart >= stripIndexEnd) {
+                return new UTF8Sequence();
+            }
         }
         return (stripIndexStart != 0 || stripIndexEnd != this.chars.length - 1)
                ? this.subSequence(stripIndexStart, stripIndexEnd + 1) : this;
@@ -1693,6 +1772,9 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
                 break;
             }
             stripIndexEnd--;
+            if (stripIndexStart >= stripIndexEnd) {
+                return new UTF8Sequence();
+            }
         }
         return (stripIndexStart != 0 || stripIndexEnd != this.chars.length - 1)
                ? this.subSequence(stripIndexStart, stripIndexEnd + 1) : this;
