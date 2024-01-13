@@ -3,6 +3,7 @@
 **/bin/
 !src/**/build/
 !src/**/bin/
+target/
 
 # Ignore Gradle GUI config
 gradle-app.setting

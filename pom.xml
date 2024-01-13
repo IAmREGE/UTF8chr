@@ -1,0 +1,24 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <build>
+    <sourceDirectory>1/src/main/java</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>1/src/main/resources</directory>
+      </resource>
+    </resources>
+  </build>
+
+  <groupId>rege.rege.utf8chr</groupId>
+  <artifactId>utf8chr</artifactId>
+  <version>0.0.1a1</version>
+  <packaging>jar</packaging>
+
+  <name>utf8chr</name>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+</project>
