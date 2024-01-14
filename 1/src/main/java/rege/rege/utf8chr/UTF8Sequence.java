@@ -517,18 +517,31 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
         return this.slice(start, stop, Integer.valueOf(1));
     }
 
-    public UTF8Sequence subSequence(int start, int stop)
+    /**
+     * @param start the start index, inclusive
+     * @param end the end index, exclusive
+     * @return
+     * @throws IndexOutOfBoundsException When
+     * {@code start > end || start < 0 || end > this.}{@link #length()}.
+     */
+    public UTF8Sequence subSequence(int start, int end)
     throws IndexOutOfBoundsException {
-        if (start > stop) {
+        if (start > end) {
             throw new IndexOutOfBoundsException();
         }
-        final UTF8Char[] NEWS = new UTF8Char[stop - start];
-        for (int i = start; i < stop; i++) {
+        final UTF8Char[] NEWS = new UTF8Char[end - start];
+        for (int i = start; i < end; i++) {
             NEWS[i - start] = this.chars[i];
         }
         return new UTF8Sequence(NEWS);
     }
 
+    /**
+     * @param start @see {@link #subSequence(int, int)}
+     * @return Equivalent to {@code this.subSequence(start, this.length())}.
+     * @throws IndexOutOfBoundsException When
+     * {@code start < 0 || start > this.}{@link #length()}.
+     */
     public UTF8Sequence subSequence(int start)throws IndexOutOfBoundsException{
         return this.subSequence(start, this.length());
     }
@@ -1332,6 +1345,13 @@ implements Comparable<UTF8Sequence>, Iterable<UTF8Char> {
     }
 
     public UTF8Sequence format(Iterable<Object> objects)
+    throws IllegalArgumentException {
+        // TODO
+        return new UTF8Sequence();
+    }
+
+    public UTF8Sequence
+    format(Iterable<Object> args, Map<UTF8Sequence, Object> kw)
     throws IllegalArgumentException {
         // TODO
         return new UTF8Sequence();
